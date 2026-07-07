@@ -21,9 +21,7 @@ from typing import List
 from langchain_huggingface import HuggingFaceEmbeddings
 from langchain_community.vectorstores import FAISS
 
-# =============================================================
 # 앱 초기화
-# =============================================================
 
 app = FastAPI(title="살구 AI 서버 (챗봇 + 구조도)")
 
@@ -35,9 +33,7 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# =============================================================
 # [챗봇] 벡터 DB & Ollama 설정
-# =============================================================
 
 INDEX_PATH = "/content/fire_index"
 
@@ -47,9 +43,7 @@ vector_db = FAISS.load_local(INDEX_PATH, embeddings, allow_dangerous_deserializa
 OLLAMA_URL = "http://localhost:11434/api/generate"
 MODEL_NAME = "exaone3.5"
 
-# =============================================================
 # [구조도] torch.load 패치 & SAM 로드
-# =============================================================
 
 _orig_load = torch.load
 def _patched_load(f, *args, **kwargs):
@@ -87,9 +81,7 @@ mask_generator = SamAutomaticMaskGenerator(
 print("[SAM] Ready on:", DEVICE)
 
 
-# =============================================================
 # [챗봇] 스키마
-# =============================================================
 
 class Question(BaseModel):
     text: str
@@ -108,9 +100,7 @@ class FeedbackRequest(BaseModel):
     call_119: bool
 
 
-# =============================================================
 # [챗봇] POST /ask
-# =============================================================
 
 @app.post("/ask")
 async def ask_question(query: Question):
@@ -185,9 +175,7 @@ async def ask_question(query: Question):
     }
 
 
-# =============================================================
 # [챗봇] 피드백 헬퍼
-# =============================================================
 
 def _build_llm_input(student_name: str, missions: List[dict], quizzes: List[dict], call_119: bool) -> dict:
     CALL_NAME = "119 신고"
@@ -287,9 +275,7 @@ def _call_ollama_sync(prompt: str, num_predict: int = 500) -> str:
         return f"Ollama 연결 실패: {str(e)}"
 
 
-# =============================================================
 # [챗봇] 백엔드 API 기반 조회 (DB 직접 연결 대신 이걸 사용)
-# =============================================================
 
 BACKEND_API_BASE = os.environ.get(
     "BACKEND_API_BASE",
@@ -379,9 +365,7 @@ def feedback_from_api(req: FeedbackAPIRequest):
     return {"result": result, "llm_input": llm_input}
 
 
-# =============================================================
 # [챗봇] POST /feedback (기존 - JSON 직접 입력 방식, 그대로 유지)
-# =============================================================
 
 @app.post("/feedback")
 def feedback(req: FeedbackRequest):
@@ -394,9 +378,7 @@ def feedback(req: FeedbackRequest):
     return {"result": result}
 
 
-# =============================================================
 # [구조도] 유틸 함수들
-# =============================================================
 
 def load_image(upload: UploadFile):
     try:
@@ -737,9 +719,7 @@ def analyze_floorplan(img):
     return elements
 
 
-# =============================================================
 # [구조도] POST /analyze-floorplan
-# =============================================================
 
 @app.post("/analyze-floorplan")
 async def analyze_floorplan_api(image: UploadFile = File(...)):
@@ -755,18 +735,14 @@ async def analyze_floorplan_api(image: UploadFile = File(...)):
     }
 
 
-# =============================================================
 # 헬스체크
-# =============================================================
 
 @app.get("/")
 def root():
     return {"status": "ok", "sam_device": DEVICE}
 
 
-# =============================================================
 # 실행 진입점
-# =============================================================
 
 if __name__ == "__main__":
     uvicorn.run(app, host="0.0.0.0", port=8000)
